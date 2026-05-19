@@ -1,0 +1,15 @@
+services:
+  extractor-api:
+    build: .
+    container_name: legal-template-extractor
+    env_file:
+      - .env
+    environment:
+      REVIEW_DB_PATH: /data/review_sessions.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - review-data:/data
+
+volumes:
+  review-data:

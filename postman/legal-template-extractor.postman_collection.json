@@ -1,0 +1,285 @@
+{
+  "info": {
+    "name": "Legal Template Extractor - End-to-End Flow",
+    "_postman_id": "3c88b91a-4a3b-4f56-9963-dcb4ce37aa0d",
+    "description": "Covers extract -> review approve -> template create -> suggest mappings -> verify -> generate text/pdf. Includes safeguards for mapping replacement and low-confidence static suggestions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "pdfFilePath",
+      "value": "/absolute/path/to/Aashutosh_signed.pdf"
+    },
+    {
+      "key": "reviewSessionId",
+      "value": ""
+    },
+    {
+      "key": "templateId",
+      "value": ""
+    },
+    {
+      "key": "templateName",
+      "value": "internship-letter-v2"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Extract PDF",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "{{pdfFilePath}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/extract/pdf",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "extract",
+            "pdf"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.review_session_id) {",
+              "  pm.collectionVariables.set('reviewSessionId', json.review_session_id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Approve Review Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"approved\",\n  \"notes\": \"Template looks correct\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/review/sessions/{{reviewSessionId}}/decision",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "review",
+            "sessions",
+            "{{reviewSessionId}}",
+            "decision"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Create Template from Review",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"template_name\": \"{{templateName}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/templates/from-review/{{reviewSessionId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "templates",
+            "from-review",
+            "{{reviewSessionId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.template_id) {",
+              "  pm.collectionVariables.set('templateId', json.template_id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Suggest Mappings (normal pass)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sample_transaction_payload\": {\n    \"candidate\": {\n      \"legal_name\": \"Aashutosh Karale\"\n    },\n    \"document\": {\n      \"execution_date\": \"2026-05-18\",\n      \"effective_date\": \"2026-05-20\",\n      \"signing_date\": \"2026-05-18\",\n      \"place\": \"Akot, Akola, Maharashtra\"\n    },\n    \"role\": {\n      \"title\": \"Software Engineering Intern\",\n      \"stipend_amount\": \"Rs. 15000\"\n    },\n    \"internship\": {\n      \"duration\": \"3-month\",\n      \"work_location\": \"Hyderabad\",\n      \"transferable_location\": \"India\"\n    },\n    \"company\": {\n      \"name\": \"Firewires OneIoT Solutions Private Limited\",\n      \"address\": \"T-Hub Foundation Knowledge City Sy No.83/1, Raidurg, Hyderabad - 500081, Telangana\",\n      \"website\": \"Oneiot.io\",\n      \"working_hours\": {\n        \"start\": \"10:00\",\n        \"end\": \"19:00\"\n      },\n      \"working_days\": \"Monday to Saturday\",\n      \"weekly_off_days\": \"Saturday and Sundays\",\n      \"lunch_break\": {\n        \"duration\": \"60 minutes\",\n        \"start_time\": \"1400 Hrs.\",\n        \"end_time\": \"1500 Hrs.\"\n      },\n      \"holidays\": {\n        \"annual_total\": \"9\",\n        \"national_count\": \"4\",\n        \"festival_count\": \"5\"\n      }\n    },\n    \"agreement\": {\n      \"termination\": {\n        \"employer_notice_period\": \"1 month\"\n      },\n      \"expenses\": {\n        \"refund_period\": \"12 months\"\n      },\n      \"resignation\": {\n        \"employee_notice_period\": \"1-month\"\n      }\n    },\n    \"intern\": {\n      \"leave\": {\n        \"annual_days\": \"twenty-five\"\n      },\n      \"relieving_letter\": {\n        \"submission_period\": \"60 days\"\n      }\n    },\n    \"seller\": {\n      \"phone_number\": \"+91-9789823673, 9886830779\"\n    }\n  },\n  \"apply_suggestions\": true,\n  \"confidence_threshold\": 0.70,\n  \"allow_static_value_suggestions\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/templates/{{templateId}}/suggest-mappings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "templates",
+            "{{templateId}}",
+            "suggest-mappings"
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Suggest Mappings (fallback for stipend_frequency)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sample_transaction_payload\": {\n    \"candidate\": {\n      \"legal_name\": \"Aashutosh Karale\"\n    },\n    \"document\": {\n      \"execution_date\": \"2026-05-18\",\n      \"effective_date\": \"2026-05-20\",\n      \"signing_date\": \"2026-05-18\",\n      \"place\": \"Akot, Akola, Maharashtra\"\n    },\n    \"role\": {\n      \"title\": \"Software Engineering Intern\",\n      \"stipend_amount\": \"Rs. 15000\"\n    },\n    \"internship\": {\n      \"duration\": \"3-month\",\n      \"work_location\": \"Hyderabad\",\n      \"transferable_location\": \"India\"\n    },\n    \"company\": {\n      \"name\": \"Firewires OneIoT Solutions Private Limited\",\n      \"address\": \"T-Hub Foundation Knowledge City Sy No.83/1, Raidurg, Hyderabad - 500081, Telangana\",\n      \"website\": \"Oneiot.io\",\n      \"working_hours\": {\n        \"start\": \"10:00\",\n        \"end\": \"19:00\"\n      },\n      \"working_days\": \"Monday to Saturday\",\n      \"weekly_off_days\": \"Saturday and Sundays\",\n      \"lunch_break\": {\n        \"duration\": \"60 minutes\",\n        \"start_time\": \"1400 Hrs.\",\n        \"end_time\": \"1500 Hrs.\"\n      },\n      \"holidays\": {\n        \"annual_total\": \"9\",\n        \"national_count\": \"4\",\n        \"festival_count\": \"5\"\n      }\n    },\n    \"agreement\": {\n      \"termination\": {\n        \"employer_notice_period\": \"1 month\"\n      },\n      \"expenses\": {\n        \"refund_period\": \"12 months\"\n      },\n      \"resignation\": {\n        \"employee_notice_period\": \"1-month\"\n      }\n    },\n    \"intern\": {\n      \"leave\": {\n        \"annual_days\": \"twenty-five\"\n      },\n      \"relieving_letter\": {\n        \"submission_period\": \"60 days\"\n      }\n    },\n    \"seller\": {\n      \"phone_number\": \"+91-9789823673, 9886830779\"\n    }\n  },\n  \"apply_suggestions\": true,\n  \"confidence_threshold\": 0.35,\n  \"allow_static_value_suggestions\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/templates/{{templateId}}/suggest-mappings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "templates",
+            "{{templateId}}",
+            "suggest-mappings"
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Get Template (verify unmapped_placeholders)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/templates/{{templateId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "templates",
+            "{{templateId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "8. Generate Text",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_payload\": {\n    \"candidate\": {\n      \"legal_name\": \"Aashutosh Karale\"\n    },\n    \"document\": {\n      \"execution_date\": \"2026-05-18\",\n      \"effective_date\": \"2026-05-20\",\n      \"signing_date\": \"2026-05-18\",\n      \"place\": \"Akot, Akola, Maharashtra\"\n    },\n    \"role\": {\n      \"title\": \"Software Engineering Intern\",\n      \"stipend_amount\": \"Rs. 15000\"\n    },\n    \"internship\": {\n      \"duration\": \"3-month\",\n      \"work_location\": \"Hyderabad\",\n      \"transferable_location\": \"India\"\n    },\n    \"company\": {\n      \"name\": \"Firewires OneIoT Solutions Private Limited\",\n      \"address\": \"T-Hub Foundation Knowledge City Sy No.83/1, Raidurg, Hyderabad - 500081, Telangana\",\n      \"website\": \"Oneiot.io\",\n      \"working_hours\": {\n        \"start\": \"10:00\",\n        \"end\": \"19:00\"\n      },\n      \"working_days\": \"Monday to Saturday\",\n      \"weekly_off_days\": \"Saturday and Sundays\",\n      \"lunch_break\": {\n        \"duration\": \"60 minutes\",\n        \"start_time\": \"1400 Hrs.\",\n        \"end_time\": \"1500 Hrs.\"\n      },\n      \"holidays\": {\n        \"annual_total\": \"9\",\n        \"national_count\": \"4\",\n        \"festival_count\": \"5\"\n      }\n    },\n    \"agreement\": {\n      \"termination\": {\n        \"employer_notice_period\": \"1 month\"\n      },\n      \"expenses\": {\n        \"refund_period\": \"12 months\"\n      },\n      \"resignation\": {\n        \"employee_notice_period\": \"1-month\"\n      }\n    },\n    \"intern\": {\n      \"leave\": {\n        \"annual_days\": \"twenty-five\"\n      },\n      \"relieving_letter\": {\n        \"submission_period\": \"60 days\"\n      }\n    },\n    \"seller\": {\n      \"phone_number\": \"+91-9789823673, 9886830779\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/templates/{{templateId}}/generate/text",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "templates",
+            "{{templateId}}",
+            "generate",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "name": "9. Generate PDF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_payload\": {\n    \"candidate\": {\n      \"legal_name\": \"Aashutosh Karale\"\n    },\n    \"document\": {\n      \"execution_date\": \"2026-05-18\",\n      \"effective_date\": \"2026-05-20\",\n      \"signing_date\": \"2026-05-18\",\n      \"place\": \"Akot, Akola, Maharashtra\"\n    },\n    \"role\": {\n      \"title\": \"Software Engineering Intern\",\n      \"stipend_amount\": \"Rs. 15000\"\n    },\n    \"internship\": {\n      \"duration\": \"3-month\",\n      \"work_location\": \"Hyderabad\",\n      \"transferable_location\": \"India\"\n    },\n    \"company\": {\n      \"name\": \"Firewires OneIoT Solutions Private Limited\",\n      \"address\": \"T-Hub Foundation Knowledge City Sy No.83/1, Raidurg, Hyderabad - 500081, Telangana\",\n      \"website\": \"Oneiot.io\",\n      \"working_hours\": {\n        \"start\": \"10:00\",\n        \"end\": \"19:00\"\n      },\n      \"working_days\": \"Monday to Saturday\",\n      \"weekly_off_days\": \"Saturday and Sundays\",\n      \"lunch_break\": {\n        \"duration\": \"60 minutes\",\n        \"start_time\": \"1400 Hrs.\",\n        \"end_time\": \"1500 Hrs.\"\n      },\n      \"holidays\": {\n        \"annual_total\": \"9\",\n        \"national_count\": \"4\",\n        \"festival_count\": \"5\"\n      }\n    },\n    \"agreement\": {\n      \"termination\": {\n        \"employer_notice_period\": \"1 month\"\n      },\n      \"expenses\": {\n        \"refund_period\": \"12 months\"\n      },\n      \"resignation\": {\n        \"employee_notice_period\": \"1-month\"\n      }\n    },\n    \"intern\": {\n      \"leave\": {\n        \"annual_days\": \"twenty-five\"\n      },\n      \"relieving_letter\": {\n        \"submission_period\": \"60 days\"\n      }\n    },\n    \"seller\": {\n      \"phone_number\": \"+91-9789823673, 9886830779\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/templates/{{templateId}}/generate/pdf",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "templates",
+            "{{templateId}}",
+            "generate",
+            "pdf"
+          ]
+        }
+      }
+    }
+  ]
+}
