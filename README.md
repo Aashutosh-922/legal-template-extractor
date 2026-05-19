@@ -256,8 +256,3 @@ Environment variables in `.env.example`:
 Import this collection for the complete API sequence:
 
 - `postman/legal-template-extractor.postman_collection.json`
-
-## Submission Notes
-
-- The codebase is ready for a public GitHub repo.
-- A Loom recording still needs to be created separately; that cannot be generated from this environment.
