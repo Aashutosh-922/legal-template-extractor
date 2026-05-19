@@ -250,13 +250,6 @@ Environment variables in `.env.example`:
 - `ENABLE_OCR_FALLBACK`
 - `REVIEW_DB_PATH`
 
-## Design Docs
-
-- [Architecture](ARCHITECTURE.md)
-- [Process Flow](PROCESS_FLOW.md)
-- [Schema](SCHEMA.md)
-- [Request Flow (curl)](REQUEST_FLOW.md)
-- [Code Explanation](CODE_EXPLANATION.md)
 
 ## Postman
 
